@@ -9,6 +9,7 @@ import {
 export class AuthDto {
   @IsNotEmpty()
   @IsString()
+  @MaxLength(16)
   userName: string;
   @IsNotEmpty()
   @IsString()
