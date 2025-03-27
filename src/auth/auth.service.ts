@@ -1,16 +1,15 @@
 import * as bcrypt from 'bcrypt';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import {
-  Injectable,
-  ConflictException,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { User } from '../user/user.entity';
 import { AuthDto } from './auth.dto/auth.dto';
 import { TokenService } from '../token/token.service';
+import {
+  QBadRequestException,
+  QConflictException,
+} from '../exceptions/all-exceptions.filter';
 
 @Injectable()
 export class AuthService {
@@ -33,7 +32,13 @@ export class AuthService {
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
-      throw new BadRequestException('Incorrect password');
+      throw new QBadRequestException(
+        'Passwords do not match',
+        'PASSWORD_MISMATCH',
+        {
+          password: 'Incorrect password',
+        },
+      );
     }
     const { access_token } = await this.tokenService.generateTokens(user);
 
@@ -46,11 +51,20 @@ export class AuthService {
     const candidate = await this.checkUserByEmail(email);
 
     if (candidate) {
-      throw new ConflictException('User already exists');
+      throw new QConflictException('User already exists', 'USER_EXISTS', {
+        email: 'Email is already in use',
+      });
     }
 
     if (confirmPassword !== password) {
-      throw new BadRequestException('Passwords do not match');
+      throw new QBadRequestException(
+        'Passwords do not match',
+        'PASSWORD_MISMATCH',
+        {
+          password: 'Passwords do not match',
+          confirmPassword: 'Passwords do not match',
+        },
+      );
     }
 
     const hashPassword = await this.hashPassword(password);
